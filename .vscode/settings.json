@@ -1,0 +1,7 @@
+{
+  "typescript.validate.enable": true,
+  "typescript.preferences.includePackageJsonAutoImports": "auto",
+  "files.associations": {
+    "**/templates/**/*": "plaintext"
+  }
+}
