@@ -3,6 +3,7 @@ import { execSync } from 'child_process';
 import fs from 'fs-extra';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import readline from 'readline';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -122,11 +123,19 @@ async function promptForOverwrite(conflicts: string[]): Promise<boolean> {
   conflicts.forEach(file => console.log(`  - ${file}`));
   console.log('');
   console.log('This will overwrite them with the new configurations.');
-  console.log('Continue? (y/N)');
   
-  // In a real implementation, you might want to use a proper prompt library
-  // For now, we'll assume yes for automation purposes
-  return true;
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+  
+  return new Promise((resolve) => {
+    rl.question('Continue? (y/N): ', (answer) => {
+      rl.close();
+      const normalizedAnswer = answer.trim().toLowerCase();
+      resolve(normalizedAnswer === 'y' || normalizedAnswer === 'yes');
+    });
+  });
 }
 
 async function main(): Promise<void> {
