@@ -1,0 +1,17 @@
+{
+  "name": "vite-plus-plus",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^24.2.1",
+    "typescript": "~5.8.3"
+  },
+  "dependencies": {
+    "fs-extra": "^11.3.1"
+  }
+}
