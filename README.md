@@ -1,6 +1,6 @@
 # Scaffold++
 
-A TypeScript project setup tool that adds standardized ESLint, Prettier, CSpell, and Husky configurations to your existing projects.
+A TypeScript project setup tool that adds standardised ESLint, Prettier, CSpell, and Husky configurations to your existing projects.
 
 ## What it does
 
@@ -18,7 +18,7 @@ All dependencies are installed with exact versions to ensure consistency across 
 
 1. **Clone and build the tool:**
    ```bash
-   git clone <your-repo-url>
+   git clone https://github.com/barrymun/scaffold-plus-plus.git
    cd scaffold-plus-plus
    pnpm install
    pnpm build
