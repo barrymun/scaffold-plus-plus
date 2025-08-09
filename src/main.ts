@@ -5,52 +5,18 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import readline from 'readline';
 
+import { DEV_DEPENDENCIES } from './consts.js';
+import { Logger } from './utils/logger/index.js';
+import { PackageJson, TemplatePackage, TsConfig } from './types.js';
+
+const logger = new Logger();
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-interface PackageJson {
-  scripts?: Record<string, string>;
-  devDependencies?: Record<string, string>;
-  [key: string]: any;
-}
-
-interface TsConfig {
-  compilerOptions?: Record<string, any>;
-  [key: string]: any;
-}
-
-interface TemplatePackage {
-  scripts: Record<string, string>;
-}
-
 const targetDir = process.argv[2] || '.';
-
 const scriptDir = path.dirname(__dirname);
 const templatesDir = path.join(scriptDir, 'templates');
-
-// Exact versions for guaranteed compatibility
-const devDependencies = [
-  '@eslint/js@9.28.0',
-  'cspell@9.1.2',
-  'eslint@9.28.0',
-  'eslint-config-prettier@10.1.5',
-  'eslint-import-resolver-typescript@4.4.4',
-  'eslint-plugin-check-file@3.3.0',
-  'eslint-plugin-import@2.32.0',
-  'eslint-plugin-prettier@5.5.1',
-  'eslint-plugin-react@7.37.5',
-  'eslint-plugin-react-hooks@5.2.0',
-  'eslint-plugin-react-refresh@0.4.20',
-  'globals@16.2.0',
-  'husky@9.1.7',
-  'prettier@3.6.1',
-  'typescript@5.8.3',
-  'typescript-eslint@8.33.1',
-  'vite@6.3.5',
-  'vite-tsconfig-paths@5.1.4',
-  'vitest@3.2.1',
-  '@vitejs/plugin-react-swc@3.7.0'
-];
 
 async function checkIfViteProject(): Promise<boolean> {
   const packageJsonPath = path.join(process.cwd(), 'package.json');
@@ -66,22 +32,23 @@ async function checkIfViteProject(): Promise<boolean> {
 }
 
 async function updateTsConfig(): Promise<void> {
-  console.log(process.cwd());
+  logger.indent();
+  logger.log('📝 Updating tsconfig.app.json...');
+  logger.indent()
+
   const tsConfigPath = path.join(process.cwd(), 'tsconfig.app.json');
   
   if (await fs.pathExists(tsConfigPath)) {
-    console.log('  📝 Updating tsconfig.app.json...');
     const content = await fs.readFile(tsConfigPath, 'utf8');
     const cleanContent = content
-        .replace(/\/\*[\s\S]*?\*\//g, '') // Remove /* */ comments
-        .replace(/\/\/.*$/gm, '')         // Remove // comments
-        .replace(/,(\s*[}\]])/g, '$1');   // Remove trailing commas  
+      .replace(/\/\*[\s\S]*?\*\//g, '') // Remove /* */ comments
+      .replace(/\/\/.*$/gm, '')         // Remove // comments
+      .replace(/,(\s*[}\]])/g, '$1');   // Remove trailing commas
     const tsConfig = JSON.parse(cleanContent) as TsConfig;
     
     if (!tsConfig.compilerOptions) {
       tsConfig.compilerOptions = {};
     }
-    console.log(tsConfig.compilerOptions);
     
     tsConfig.compilerOptions.baseUrl = './src';
     tsConfig.compilerOptions.paths = {
@@ -89,19 +56,27 @@ async function updateTsConfig(): Promise<void> {
     };
     
     await fs.writeJson(tsConfigPath, tsConfig, { spaces: 2 });
-    console.log('    ✅ Added baseUrl and path mapping');
+
+    logger.success('Added baseUrl and path mapping');
   } else {
-    console.log('  ⚠️  tsconfig.app.json not found, skipping path configuration');
+    logger.warning('tsconfig.app.json not found, skipping path configuration');
   }
+
+  logger.resetIndent();
 }
 
 async function initializeHusky(): Promise<void> {
+  logger.indent();
+  logger.log('🐕 Initializing Husky...');
+  logger.indent();
+
   try {
-    console.log('  🐕 Initializing Husky...');
     execSync('npx husky init', { stdio: 'inherit' });
-    console.log('    ✅ Husky initialized');
+    logger.success('Husky initialized');
   } catch (error) {
-    console.log('    ⚠️  Husky initialization failed, you may need to run "npx husky init" manually');
+    logger.warning('Husky initialization failed, you may need to run "npx husky init" manually');
+  } finally {
+    logger.resetIndent();
   }
 }
 
@@ -119,10 +94,11 @@ async function checkForConflicts(): Promise<string[]> {
 }
 
 async function promptForOverwrite(conflicts: string[]): Promise<boolean> {
-  console.log('⚠️  The following configuration files already exist:');
-  conflicts.forEach(file => console.log(`  - ${file}`));
-  console.log('');
-  console.log('This will overwrite them with the new configurations.');
+  logger.warning('The following configuration files already exist:');
+  logger.indent();
+  conflicts.forEach((file) => logger.log(file));
+  logger.outdent();
+  logger.log('This will overwrite them with the new configurations.');
   
   const rl = readline.createInterface({
     input: process.stdin,
@@ -143,20 +119,20 @@ async function main(): Promise<void> {
     // Change to target directory if specified
     if (targetDir !== '.') {
       if (!(await fs.pathExists(targetDir))) {
-        console.error(`❌ Directory '${targetDir}' does not exist`);
+        logger.error(`Directory '${targetDir}' does not exist`);
         process.exit(1);
       }
       process.chdir(targetDir);
     }
     
-    console.log(`🔧 Setting up Vite TypeScript project in: ${process.cwd()}`);
+    logger.log(`🔧 Setting up Vite TypeScript project in: ${process.cwd()}`);
     
     // Check if this looks like a Vite project
     if (!(await checkIfViteProject())) {
-      console.log('⚠️  This doesn\'t appear to be a Vite project (no vite dependency found)');
-      console.log('   This setup is designed for Vite + TypeScript + React projects');
-      console.log('   Continue anyway? The setup may not work as expected.');
-      // Continue anyway for now
+      logger.warning('This doesn\'t appear to be a Vite project (no vite dependency found)');
+      logger.log('This setup is designed for Vite + TypeScript + React projects');
+      logger.log('Continue anyway? The setup may not work as expected.');
+      // TODO: Continue anyway for now
     }
     
     // Check for existing config files
@@ -164,27 +140,28 @@ async function main(): Promise<void> {
     if (conflicts.length > 0) {
       const shouldContinue = await promptForOverwrite(conflicts);
       if (!shouldContinue) {
-        console.log('❌ Setup cancelled');
+        logger.error('Setup cancelled');
         process.exit(0);
       }
     }
     
-    console.log('📦 Installing dependencies (exact versions)...');
-    execSync(`pnpm add -D --save-exact ${devDependencies.join(' ')}`, { stdio: 'inherit' });
+    logger.log('📦 Installing dependencies (exact versions)...');
+    execSync(`pnpm add -D --save-exact ${DEV_DEPENDENCIES.join(' ')}`, { stdio: 'inherit' });
     
-    console.log('📄 Copying configuration files...');
+    logger.log('📄 Copying configuration files...');
+    logger.indent();
     const templateFiles = await fs.readdir(templatesDir);
-    
     for (const file of templateFiles) {
       await fs.copy(
         path.join(templatesDir, file),
         path.join(process.cwd(), file),
         { overwrite: true }
       );
-      console.log(`  ✅ ${file}`);
+      logger.success(file);
     }
+    logger.outdent();
     
-    console.log('⚙️  Updating package.json scripts...');
+    logger.log('⚙️ Updating package.json scripts...');
     const pkg = await fs.readJson('package.json') as PackageJson;
     const template = await fs.readJson(
       path.join(templatesDir, 'package-template.json')
@@ -193,26 +170,30 @@ async function main(): Promise<void> {
     pkg.scripts = { ...pkg.scripts, ...template.scripts };
     await fs.writeJson('package.json', pkg, { spaces: 2 });
     
-    console.log('🔧 Updating TypeScript configuration...');
+    logger.log('🔧 Updating TypeScript configuration...');
     await updateTsConfig();
     
-    console.log('🎣 Setting up Husky...');
+    logger.log('🎣 Setting up Husky...');
     await initializeHusky();
     
-    console.log('🎉 Setup complete!');
-    console.log('');
-    console.log('Available new scripts:');
-    console.log('  pnpm lint      - Run ESLint');
-    console.log('  pnpm lint-fix  - Run ESLint with auto-fix');
-    console.log('  pnpm cspell    - Check spelling');
-    console.log('  pnpm test      - Run tests with Vitest');
-    console.log('');
-    console.log('You may want to run:');
-    console.log('  pnpm lint-fix  - Fix any immediate linting issues');
-    
+    logger.log('🎉 Setup complete!');
+    logger.log('');
+    logger.log('Available new scripts:');
+    logger.indent();
+    logger.log('pnpm lint      - Run ESLint');
+    logger.log('pnpm lint-fix  - Run ESLint with auto-fix');
+    logger.log('pnpm cspell    - Check spelling');
+    logger.log('pnpm test      - Run tests with Vitest');
+    logger.log('');
+    logger.outdent();
+    logger.log('You may want to run:');
+    logger.indent();
+    logger.log('pnpm lint-fix  - Fix any immediate linting issues');
   } catch (error) {
-    console.error('❌ Error:', error instanceof Error ? error.message : error);
+    logger.error(error);
     process.exit(1);
+  } finally {
+    logger.resetIndent();
   }
 }
 
