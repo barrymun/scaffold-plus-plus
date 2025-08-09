@@ -3,7 +3,6 @@
     "prepare": "husky",
     "lint": "eslint .",
     "lint-fix": "eslint . --fix",
-    "test": "vitest run",
     "cspell": "cspell --config cspell.json \"**/*.{ts,tsx,js,jsx,html,json}\" --quiet"
   }
 }

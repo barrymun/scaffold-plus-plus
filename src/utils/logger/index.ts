@@ -5,39 +5,39 @@ export class Logger {
     if (error instanceof Error) {
       return error.message;
     }
-    
-    if (typeof error === 'string') {
+
+    if (typeof error === "string") {
       return error;
     }
-    
-    if (error && typeof error === 'object') {
+
+    if (error && typeof error === "object") {
       return JSON.stringify(error);
     }
-    
+
     return String(error);
   }
-  
+
   log(message: string) {
-    console.log('  '.repeat(this.indentLevel) + message);
+    console.log("  ".repeat(this.indentLevel) + message);
   }
-  
+
   success(message: string) {
-    console.log('  '.repeat(this.indentLevel) + '✅ ' + message);
+    console.log("  ".repeat(this.indentLevel) + "✅ " + message);
   }
-  
+
   warning(message: string) {
-    console.warn('  '.repeat(this.indentLevel) + '⚠️ ' + message);
+    console.warn("  ".repeat(this.indentLevel) + "⚠️ " + message);
   }
 
   error(error: unknown) {
     const message = this.formatError(error);
-    console.error('  '.repeat(this.indentLevel) + '❌ ' + message);
+    console.error("  ".repeat(this.indentLevel) + "❌ " + message);
   }
 
   indent() {
     this.indentLevel++;
   }
-  
+
   outdent() {
     this.indentLevel = Math.max(0, this.indentLevel - 1);
   }
